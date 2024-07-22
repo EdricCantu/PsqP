@@ -16,7 +16,7 @@ function dcInit() {
   dc.onmessage = e => log(e.data);
 }
 
-function createOffer() {
+window.createOffer = function(){
   button.disabled = true;
   dcInit(dc = pc.createDataChannel("chat"));
   haveGum.then(() => pc.createOffer()).then(d => pc.setLocalDescription(d))
