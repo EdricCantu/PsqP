@@ -1,8 +1,9 @@
 //https://jsfiddle.net/jib1/nnc13tw2/
 (async ()=>{
-const iceServers = 
-  (await (await fetch("https://gist.githubusercontent.com/mondain/b0ec1cf5f60ae726202e/raw/2d2b96b4508a38d342e0228d46eab84dad2398a3/public-stun-list.txt")).text())
-  .split("\n").map(url=>({ url: "stun:"+url }));
+//const iceServers = 
+//  (await (await fetch("https://gist.githubusercontent.com/mondain/b0ec1cf5f60ae726202e/raw/2d2b96b4508a38d342e0228d46eab84dad2398a3/public-stun-list.txt")).text())
+//  .split("\n").map(url=>({ url: "stun:"+url }));
+  const iceServers = [{ url: "stun:stun4.l.google.com:19302"}];
 var dc, pc = new RTCPeerConnection({ iceServers });
 pc.onaddstream = e => v2.srcObject = e.stream;
 pc.ondatachannel = e => dcInit(dc = e.channel);
