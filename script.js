@@ -1,6 +1,8 @@
-var server = { urls: ["stun:stun.l.google.com:19302"] };
-
-var dc, pc = new RTCPeerConnection({ iceServers: [server] });
+//https://jsfiddle.net/jib1/nnc13tw2/
+iceSercers = 
+  (await (await fetch("https://gist.githubusercontent.com/mondain/b0ec1cf5f60ae726202e/raw/2d2b96b4508a38d342e0228d46eab84dad2398a3/public-stun-list.txt")).text())
+  .split("\n").map(url=>({ url: "stun:"+url }));
+var dc, pc = new RTCPeerConnection({ iceServers});
 pc.onaddstream = e => v2.srcObject = e.stream;
 pc.ondatachannel = e => dcInit(dc = e.channel);
 pc.oniceconnectionstatechange = e => log(pc.iceConnectionState);
