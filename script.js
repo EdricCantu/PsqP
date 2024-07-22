@@ -1,6 +1,6 @@
 //https://jsfiddle.net/jib1/nnc13tw2/
 (async ()=>{
-iceSercers = 
+const iceServers = 
   (await (await fetch("https://gist.githubusercontent.com/mondain/b0ec1cf5f60ae726202e/raw/2d2b96b4508a38d342e0228d46eab84dad2398a3/public-stun-list.txt")).text())
   .split("\n").map(url=>({ url: "stun:"+url }));
 var dc, pc = new RTCPeerConnection({ iceServers });
