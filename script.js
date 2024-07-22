@@ -1,53 +1,59 @@
-const localOffer = document.getElementById('localOffer');
-const remoteOffer = document.getElementById('remoteOffer');
-const connectButton = document.getElementById('connect');
-const messageInput = document.getElementById('message');
-const sendButton = document.getElementById('send');
-const messagesDiv = document.getElementById('messages');
+var server = { urls: ["stun:stun.l.google.com:19302"] };
 
-const configuration = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+var dc, pc = new RTCPeerConnection({ iceServers: [server] });
+pc.onaddstream = e => v2.srcObject = e.stream;
+pc.ondatachannel = e => dcInit(dc = e.channel);
+pc.oniceconnectionstatechange = e => log(pc.iceConnectionState);
+
+var haveGum = navigator.mediaDevices.getUserMedia({video:true, audio:true})
+  .then(stream => pc.addStream(v1.srcObject = stream)).catch(log);
+
+function dcInit() {
+  dc.onopen = () => log("Chat!");
+  dc.onmessage = e => log(e.data);
+}
+
+function createOffer() {
+  button.disabled = true;
+  dcInit(dc = pc.createDataChannel("chat"));
+  haveGum.then(() => pc.createOffer()).then(d => pc.setLocalDescription(d))
+    .catch(log);
+  pc.onicecandidate = e => {
+    if (e.candidate) return;
+    offer.value = pc.localDescription.sdp;
+    offer.select();
+    answer.placeholder = "Paste answer here";
+  };
 };
 
-let localConnection = new RTCPeerConnection(configuration);
-let dataChannel = localConnection.createDataChannel('chat');
-
-dataChannel.onmessage = (event) => {
-    const message = document.createElement('div');
-    message.textContent = `Remote: ${event.data}`;
-    messagesDiv.appendChild(message);
+offer.onkeypress = e => {
+  if (!enterPressed(e) || pc.signalingState != "stable") return;
+  button.disabled = offer.disabled = true;
+  var desc = new RTCSessionDescription({ type:"offer", sdp:offer.value });
+  pc.setRemoteDescription(desc)
+    .then(() => pc.createAnswer()).then(d => pc.setLocalDescription(d))
+    .catch(log);
+  pc.onicecandidate = e => {
+    if (e.candidate) return;
+    answer.focus();
+    answer.value = pc.localDescription.sdp;
+    answer.select();
+  };
 };
 
-sendButton.onclick = () => {
-    const message = messageInput.value;
-    dataChannel.send(message);
-    const messageElement = document.createElement('div');
-    messageElement.textContent = `You: ${message}`;
-    messagesDiv.appendChild(messageElement);
-    messageInput.value = '';
+answer.onkeypress = e => {
+  if (!enterPressed(e) || pc.signalingState != "have-local-offer") return;
+  answer.disabled = true;
+  var desc = new RTCSessionDescription({ type:"answer", sdp:answer.value });
+  pc.setRemoteDescription(desc).catch(log);
 };
 
-localConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-        localOffer.value = JSON.stringify(localConnection.localDescription);
-    }
+chat.onkeypress = e => {
+  if (!enterPressed(e)) return;
+  dc.send(chat.value);
+  log(chat.value);
+  chat.value = "";
 };
 
-connectButton.onclick = async () => {
-    const remoteDescription = new RTCSessionDescription(JSON.parse(remoteOffer.value));
-    await localConnection.setRemoteDescription(remoteDescription);
-    if (remoteDescription.type === 'offer') {
-        const answer = await localConnection.createAnswer();
-        await localConnection.setLocalDescription(answer);
-        localOffer.value = JSON.stringify(localConnection.localDescription);
-    }
-};
-
-(async () => {
-    const offer = await localConnection.createOffer();
-    await localConnection.setLocalDescription(offer);
-    localOffer.value = JSON.stringify(localConnection.localDescription);
-})();
+var enterPressed = e => e.keyCode == 13;
+var log = msg => div.innerHTML += "<p>" + msg + "</p>";
