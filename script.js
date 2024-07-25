@@ -1,65 +1,59 @@
-//https://jsfiddle.net/jib1/nnc13tw2/
-(async ()=>{
-//const iceServers = 
-//  (await (await fetch("https://gist.githubusercontent.com/mondain/b0ec1cf5f60ae726202e/raw/2d2b96b4508a38d342e0228d46eab84dad2398a3/public-stun-list.txt")).text())
-//  .split("\n").map(url=>({ url: "stun:"+url }));
-  const iceServers = [{ url: "stun:stun4.l.google.com:19302"}];
-var dc, pc = new RTCPeerConnection({ iceServers });
-pc.onaddstream = e => v2.srcObject = e.stream;
-pc.ondatachannel = e => dcInit(dc = e.channel);
-pc.oniceconnectionstatechange = e => log(pc.iceConnectionState);
-
-var haveGum = navigator.mediaDevices.getUserMedia({video:true, audio:true})
-  .then(stream => pc.addStream(v1.srcObject = stream)).catch(log);
-
-function dcInit() {
-  dc.onopen = () => log("Chat!");
-  dc.onmessage = e => log(e.data);
+const can = document.getElementById('can');
+const ctx = can.getContext('2d');
+function resizeCanvas() {
+  can.width = window.innerWidth;
+  can.height = window.innerHeight;
+  ctx.clearRect(0, 0, can.width, can.height);
 }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+ctx.strokeStyle = "#777777";
+ctx.lineWidth = 3;
 
-window.createOffer = function(){
-  button.disabled = true;
-  dcInit(dc = pc.createDataChannel("chat"));
-  haveGum.then(() => pc.createOffer()).then(d => pc.setLocalDescription(d))
-    .catch(log);
-  pc.onicecandidate = e => {
-    if (e.candidate) return;
-    offer.value = pc.localDescription.sdp;
-    offer.select();
-    answer.placeholder = "Paste answer here";
-  };
-};
+function nearLD(perim, ld){
+  const mustDiv = ld*2; //A pair of a line and a space.
+  return (perim / Math.round(perim / mustDiv)) / 2;
+}
+function drawRoundRect(x,y, w,h, r){
+  const lw = ctx.lineWidth;
+  ctx.clearRect(x-lw,y-lw, w+(lw*2),h+(lw*2));
+  ctx.moveTo(x, y+r);
+  ctx.lineTo(x, (y+h)-r);//l t-b
+  ctx.arcTo(x, y+h, x+r, y+h, r);
+  ctx.lineTo((x+w)-r, y+h); //b l-r
+  ctx.arcTo(x+w, y+h, x+w, (y+h)-r, r);
+  ctx.lineTo(x+w, y+r); //r b-t
+  ctx.arcTo(x+w, y, (x+w)-r, y, r);
+  ctx.lineTo(x+r, y); //t r-l
+  ctx.arcTo(x, y, x, y+r, r);
+}
+function drawDashedRoundRect(x,y, w,h, r, ld,ldo){
+  const prevLd = ctx.getLineDash();
+  const prevLdo = ctx.lineDashOffset;
+  const d = 2*r;
+  const perim = (Math.PI*d) + ((w-d)*2) + ((h-d)*2);
+  ld = nearLD(perim, ld);
+  ctx.setLineDash([ld,ld]);
+  ctx.lineDashOffset = ldo;
+  drawRoundRect(x,y,w,h,r);
 
-offer.onkeypress = e => {
-  if (!enterPressed(e) || pc.signalingState != "stable") return;
-  button.disabled = offer.disabled = true;
-  var desc = new RTCSessionDescription({ type:"offer", sdp:offer.value });
-  pc.setRemoteDescription(desc)
-    .then(() => pc.createAnswer()).then(d => pc.setLocalDescription(d))
-    .catch(log);
-  pc.onicecandidate = e => {
-    if (e.candidate) return;
-    answer.focus();
-    answer.value = pc.localDescription.sdp;
-    answer.select();
-  };
-};
+  //ctx.setLineDash(prevLd);
+  //ctx.lineDashOffset = prevLdo;
+}
+speed = 0.15;
+begin = Date.now(); ldo = 0;
+w = 300, h = 50, r = 25, ld = 15;
 
-answer.onkeypress = e => {
-  if (!enterPressed(e) || pc.signalingState != "have-local-offer") return;
-  answer.disabled = true;
-  var desc = new RTCSessionDescription({ type:"answer", sdp:answer.value });
-  pc.setRemoteDescription(desc).catch(log);
-};
+function animate(){
+  ldo = (Date.now() - begin) * speed; 
+  ctx.beginPath();
+  drawDashedRoundRect(50,50, w,h, r, ld, ldo);
+  ctx.stroke();
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
 
-chat.onkeypress = e => {
-  if (!enterPressed(e)) return;
-  dc.send(chat.value);
-  log(chat.value);
-  chat.value = "";
-};
+/*cmd for msg app via p2p rtc
+███████████████████████████████ P2P: 
 
-})()
-
-var enterPressed = e => e.keyCode == 13;
-var log = msg => div.innerHTML += "<p>" + msg + "</p>";
+*/
